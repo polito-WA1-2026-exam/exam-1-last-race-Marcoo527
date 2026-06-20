@@ -47,85 +47,80 @@ const hashPassword = (plainPassword) =>
 
 
 
-const seedLines = async (lineNames) => {
-    const entries = await Promise.all(
-        lineNames.map(async (name) =>{
-            const {lastID} = await run('INSERT INTO lines (name) VALUES (?)', [name]);
-            return [name, lastID];
-        }),
-    );
-    return Object.fromEntries(entries);
+const seedLines = async(lineNames) =>{
+    const lineIds = {};
+    for(const name of lineNames){
+        const {lastID} = await run('INSERT INTO lines (name) VALUES (?)', [name]);
+        lineIds[name] = lastID;
+    }
+    return lineIds;
 };
 
 
-const seedStations =async(stationNames) => {
-    const entries = await Promise.all(
-        stationNames.map(async (name) => {
-            const {lastID} = await run('INSERT INTO stations (name) VALUES (?)', [name]);
-            return [name, lastID];
-        }),
-    );
-    return Object.fromEntries(entries);
-}
+const seedStations = async(stationNames) =>{
+    const stationIds ={};
+    for (const name of stationNames) {
+        const {lastID} = await run('INSERT INTO stations (name) VALUES (?)', [name]);
+        stationIds[name] = lastID;
+    }
+    return stationIds;
+};
 
 const seedSegmentsAndStationsLines = async(lineDefinitions, lineIds, stationIds) =>{
     const segmentInserts = lineDefinitions.flatMap((line) =>{
-        return line.stations.slice(0, -1).map((stationName, index) =>({
-            lineId: lineIds[line.name],
-            stationAId: stationIds[stationName],
-            stationBId: stationIds[line.stations[index + 1]],
+        return line.stations.slice(0, -1).map((stationName, index) => ({
+            lineId:lineIds[line.name],
+            stationAId:stationIds[stationName],
+            stationBId:stationIds[line.stations[index+1]],
         }));
     });
     
-    await segmentInserts.reduce(async(previousPromise, segment) => {
-        await previousPromise;
-        return run(
+
+    for(const segment of segmentInserts){
+        await run(
             'INSERT INTO segments (line_id, station_a_id, station_b_id) VALUES (?, ?, ?)',
-            [segment.lineId, segment.stationAId, segment.stationBId],
+            [segment.lineId, segment.stationAId, segment.stationBId]
         );
-    }, Promise.resolve());
+    }
 
-
-    const stationLineInserts= lineDefinitions.flatMap((line) => 
-        line.stations.map((stationName) => ({
+    const stationLineInserts = lineDefinitions.flatMap((line) => 
+        line.stations.map((stationName) =>({
             lineId: lineIds[line.name],
             stationId: stationIds[stationName],
-        })),
+        }))
     );
 
-    await stationLineInserts.reduce(async(previousPromise, entry) => {
-        await previousPromise;
-        return run(
+
+    for(const entry of stationLineInserts){
+        await run(
             'INSERT INTO station_lines (line_id, station_id) VALUES (?, ?)',
-            [entry.lineId, entry.stationId],
+            [entry.lineId, entry.stationId]
         );
-    }, Promise.resolve());
-
-
+    }
 };
 
 
-const seedEvents = async(events) => {
-    await events.reduce(async (previousPromise, event) => {
-        await previousPromise;
-        return run('INSERT INTO events (description, effect) VALUES (?, ?)', [
+const seedEvents = async(events) =>{
+    for(const event of events){
+        await run('INSERT INTO events (description, effect) VALUES (?, ?)', [
             event.description,
             event.effect,
-        ]
-        );
-    }, Promise.resolve());
+        ]);
+    }
 };
 
-const seedUsers= async(users) => {
-    const entries= await users.reduce(async(previousPromise, user) => {
-        const accumulator=await previousPromise;
-        const {hash, salt} = await hashPassword(user.password);
-        const{lastID} = await run('INSERT INTO users (username, password_hash, salt) VALUES (?, ?, ?)', 
-            [user.username, hash, salt],
+const seedUsers =async(users) =>{
+    const userIds = {};   
+    for (const user of users) {
+        const {hash, salt} =await hashPassword(user.password);
+        const {lastID} = await run(
+            'INSERT INTO users (username, password_hash, salt) VALUES (?, ?, ?)', 
+            [user.username, hash, salt]
         );
-        return [...accumulator, [user.username, lastID]];
-    }, Promise.resolve([]));
-    return Object.fromEntries(entries);
+        userIds[user.username] = lastID;
+    }
+    
+    return userIds;
 };
 
 
@@ -178,7 +173,7 @@ const main= async() => {
             {description: 'Nostalgia and homesickness overwhelm you while staring at the sea', effect: -1 },
             {description: 'The enchanting song of the Sirens makes you lose your way', effect: -2 },
             {description: 'The Laestrygonians attack and destroy part of your fleet', effect: -3 },
-            {description: 'Your crew opens Aeolus’s bag of winds, unleashing a violent storm', effect: -1 },
+            {description: 'Your crew opens Aeolus\'s bag of winds, unleashing a violent storm', effect: -1 },
         ];
         await seedEvents(events);
 
@@ -195,9 +190,8 @@ const main= async() => {
             {username: 'Luca', startName: 'Scheria', endName: 'Isola di Ogigia', score: 19},
         ];
 
-        await sampleGames.reduce(async(previousPromise, game) => {
-            await previousPromise;
-            return run(
+        for (const game of sampleGames) {
+            await run(
                 `INSERT INTO games (user_id, start_station_id, end_station_id, status, planning_deadline, score, created_at) 
                 VALUES (?, ?, ?, 'completed', NULL, ?, ?)`,
                 [
@@ -206,10 +200,9 @@ const main= async() => {
                     stationIds[game.endName],
                     game.score,
                     dayjs().toISOString(),
-                ],
-                
+                ]
             );
-        }, Promise.resolve());  
+        }
 
         console.log('Database initialized successfully in server/last_race.db');
         
