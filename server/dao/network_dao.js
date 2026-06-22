@@ -1,5 +1,3 @@
-'use strict';
-
 import db from '../db.js';
 
 //returns all possible lines
@@ -47,7 +45,7 @@ const listSegmentsWithLine = () =>
 
 
 //returns all segments with their associated station names, without line information
-const listSegmentsPairs= () =>
+const listSegmentPairs= () =>
   new Promise((resolve, reject) => {
     const sql = `
       SELECT
@@ -59,21 +57,6 @@ const listSegmentsPairs= () =>
       FROM segments
       JOIN stations AS stationA ON segments.station_a_id = stationA.id
       JOIN stations AS stationB ON segments.station_b_id = stationB.id
-    `;
-    db.all(sql, [], (err, rows) => {
-      err ? reject(err) : resolve(rows);
-    });
-  });
-
-
-//returns, for each station, the lines it belongs to
-const listStationsLines = () =>
-  new Promise((resolve, reject) => {
-    const sql = `
-      SELECT
-        station_lines.station_id AS stationId,
-        station_lines.line_id AS lineId
-      FROM station_lines
     `;
     db.all(sql, [], (err, rows) => {
       err ? reject(err) : resolve(rows);
@@ -104,7 +87,6 @@ export {
   listLines,
   listStations,
   listSegmentsWithLine,
-  listSegmentsPairs,
-  listStationsLines,
+  listSegmentPairs,
   getSegmentById
 }

@@ -1,5 +1,3 @@
-'use strict';
-
 import db from '../db.js';
 import dayjs from 'dayjs';
 
@@ -12,8 +10,8 @@ const createGame = (userId, startStationId, endStationId) =>
       VALUES (?, ?, ?, 'setup', 20, ?)
     `;
     const createdAt = dayjs().toISOString();
-    db.run(sql, [userId, startStationId, endStationId, createdAt], err => {
-      err ? reject(err) : resolve(this.lastID);
+    db.run(sql, [userId, startStationId, endStationId, createdAt], function(err) { 
+      err ? reject(err) : resolve(this.lastID); 
     });
   });
 
@@ -37,19 +35,18 @@ const getGameById = (gameId) =>
 
 //set the deadline to 90 seconds from now and changing the status to 'planning'
 const startPlanning = (gameId, planningSeconds) =>
-  new Promise((resolve, reject) =>{
-    const deadline= dayjs().add(planningSeconds, 'second').toISOString();
-    const sql= `UPDATE games SET status = 'planning', planning_deadline = ? WHERE id = ?`;
+  new Promise((resolve, reject) => {
+    const deadline = dayjs().add(planningSeconds, 'second').toISOString();
+    const sql = `UPDATE games SET status = 'planning', planning_deadline = ? WHERE id = ?`;
     db.run(sql, [deadline, gameId], err => {
-      err ? reject(err) : resolve();
+      err ? reject(err) : resolve(deadline); 
     });
   });
 
 
 //update the status of a game to a new value (for example 'execution' or 'completed')
 const updateGameStatus = (gameId, newStatus) =>
-  new Promise((resolve, reject) =>{
-    const finalScore = Math.max(score, 0);
+  new Promise((resolve, reject) => {
     const sql = `UPDATE games SET status = ? WHERE id = ?`;
     db.run(sql, [newStatus, gameId], err => {
       err ? reject(err) : resolve();
@@ -138,7 +135,14 @@ const applyEventToStep= (gameSegmentId, eventId, effect) =>
     });
   });
 
-
+//returns all possible events
+const listEvents = ()=>
+  new Promise((resolve, reject) =>{
+    const sql = 'SELECT id, description, effect FROM events';
+    db.all(sql, [], (err,rows) =>{
+      err ? reject(err) : resolve(rows);
+    });
+  });
 
 
 export {
@@ -150,5 +154,6 @@ export {
   saveRoute,
   getRouteSteps,
   applyEventToStep,
-  getRanking
+  getRanking,
+  listEvents
 }

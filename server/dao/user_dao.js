@@ -1,4 +1,3 @@
-'use strict'; 
 
 import db from '../db.js'; 
 import crypto from 'crypto';  
@@ -37,7 +36,7 @@ const getUser = (username, password) =>
         return;
       }
       try {
-        const isMatch = await checkPassword(password, row.password_hash, row.salt);
+        const isMatch = await checkPassword(password, row.password_hash, row.password_salt);
         if(!isMatch){
           resolve(false);
           return;
@@ -67,7 +66,6 @@ const getUserById = (id) =>
 
 
 export {
-  checkPassword,
   getUser,
   getUserById
 }

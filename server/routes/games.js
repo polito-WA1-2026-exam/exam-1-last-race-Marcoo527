@@ -8,10 +8,10 @@ import {
     updateGameScore, 
     saveRoute, 
     getRouteSteps, 
-    applyEventToStep 
+    applyEventToStep,
+    listEvents
 } from '../dao/game_dao.js';
-import {listStations, listSegmentPairs, listStationLines, getSegmentById} from '../dao/network_dao.js';
-import {listEvents} from '../dao/event_dao.js';
+import {listStations, listSegmentPairs, getSegmentById} from '../dao/network_dao.js';
 
 const router = express.Router();
 const PLANNING_SECONDS = 90;
@@ -75,13 +75,13 @@ const findValidStartEnd =(stations, segments, minSegments) =>{
 
 //checks the route chosen by the player
 const validateRoute = async(segmentIds, startStationId, endStationId) => {
-    if (!segmentIds || segmentIds.length === 0) {return false;}
+    if(!segmentIds || segmentIds.length === 0) {return false;}
 
     const segmentDetails = await Promise.all(segmentIds.map((id) => getSegmentById(id)));
-    if (segmentDetails.some((s) => !s)) { return false; } //every segment has to exist
+    if(segmentDetails.some((s) => !s)) { return false; } //every segment has to exist
 
     const usedSegmentIds = new Set(segmentIds);
-    if (usedSegmentIds.size !== segmentIds.length) {return false;}  //duplicates segments can't be accepted
+    if(usedSegmentIds.size !== segmentIds.length) {return false;}  //duplicates segments can't be accepted
 
     const firstSeg = segmentDetails[0];   //we check that first segment hook up to the start station
     let currentStationId;

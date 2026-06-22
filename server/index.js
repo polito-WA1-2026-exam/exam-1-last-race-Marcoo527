@@ -6,7 +6,7 @@ import session from 'express-session';
 import passport from 'passport';
 import {Strategy as LocalStrategy} from 'passport-local';
 
-import {getUser, getUserById} from './dao/user-dao.js';
+import {getUser, getUserById} from './dao/user_dao.js';
 import authRouter    from './routes/auth.js';
 import networkRouter from './routes/network.js';
 import gamesRouter   from './routes/games.js';

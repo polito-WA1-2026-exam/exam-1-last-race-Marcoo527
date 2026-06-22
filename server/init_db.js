@@ -1,4 +1,3 @@
-'use strict';
 
 import fs from 'fs';
 import path from 'path';
@@ -12,6 +11,7 @@ const dirname = import.meta.dirname;
 const DB_FILE = path.join(dirname, 'last_race.db');
 const SCHEMA_FILE = path.join(dirname, 'schema.sql');
 
+//reset the database file if it already exists
 if(fs.existsSync(DB_FILE)){
     fs.unlinkSync(DB_FILE);
 }
@@ -32,7 +32,7 @@ const run = (sql, params = []) =>
         });
     });
 
-
+//hashes the password
 const hashPassword = (plainPassword) => 
     new Promise((resolve, reject) => {
         const salt = crypto.randomBytes(16).toString('hex');
@@ -66,7 +66,7 @@ const seedStations = async(stationNames) =>{
     return stationIds;
 };
 
-const seedSegmentsAndStationsLines = async(lineDefinitions, lineIds, stationIds) =>{
+const seedSegments = async(lineDefinitions, lineIds, stationIds) =>{
     const segmentInserts = lineDefinitions.flatMap((line) =>{
         return line.stations.slice(0, -1).map((stationName, index) => ({
             lineId:lineIds[line.name],
@@ -83,20 +83,7 @@ const seedSegmentsAndStationsLines = async(lineDefinitions, lineIds, stationIds)
         );
     }
 
-    const stationLineInserts = lineDefinitions.flatMap((line) => 
-        line.stations.map((stationName) =>({
-            lineId: lineIds[line.name],
-            stationId: stationIds[stationName],
-        }))
-    );
 
-
-    for(const entry of stationLineInserts){
-        await run(
-            'INSERT INTO station_lines (line_id, station_id) VALUES (?, ?)',
-            [entry.lineId, entry.stationId]
-        );
-    }
 };
 
 
@@ -114,7 +101,7 @@ const seedUsers =async(users) =>{
     for (const user of users) {
         const {hash, salt} =await hashPassword(user.password);
         const {lastID} = await run(
-            'INSERT INTO users (username, password_hash, salt) VALUES (?, ?, ?)', 
+            'INSERT INTO users (username, password_hash, password_salt) VALUES (?, ?, ?)', 
             [user.username, hash, salt]
         );
         userIds[user.username] = lastID;
@@ -143,7 +130,7 @@ const main= async() => {
             },
             {
                 name: 'Linea del Mare',
-                stations: ['Itaca', 'Isola di Eolo', 'Scilla e Cariddi', 'Isola di Ea'],
+                stations: ['Isola di Eolo', 'Itaca', 'Isola di Ea', 'Scilla e Cariddi'],
             },
             {
                 name: 'Linea dei Pericoli',
@@ -151,7 +138,7 @@ const main= async() => {
             },
             {
                 name: 'Linea delle Ninfe',
-                stations: ['Isola di Ea', 'Trinacria', 'Isola di Ogigia', 'Telepilo'],
+                stations: ['Trinacria', 'Isola di Ea', 'Isola di Ogigia', 'Telepilo'],
             },
         ];
 
@@ -161,7 +148,7 @@ const main= async() => {
 
         const lineIds = await seedLines(allLineNames);
         const stationIds = await seedStations(allStationNames);
-        await seedSegmentsAndStationsLines(lineDefinitions, lineIds, stationIds);
+        await seedSegments(lineDefinitions, lineIds, stationIds);
 
         const events= [
             {description: 'Smooth journey with favourable winds', effect: 0},
@@ -185,9 +172,8 @@ const main= async() => {
         const userIds = await seedUsers(users);
 
         const sampleGames= [
-            {username: 'Matteo', startName: 'Troia', endName: 'Itaca', score: 23},
+            {username: 'Matteo', startName: 'Troia', endName: 'Isola di Eolo', score: 23},
             {username: 'Giulia', startName: 'Isola di Eolo', endName: 'Regno dei Morti', score: 17},
-            {username: 'Luca', startName: 'Scheria', endName: 'Isola di Ogigia', score: 19},
         ];
 
         for (const game of sampleGames) {
